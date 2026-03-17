@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Availability Portal - OneCampus</title>
+    <link rel="stylesheet" href="Faculty_Aval.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* ── Cursor pointer on cards ── */
+        .faculty-card { cursor: pointer; }
+
+        /* ── Modal Overlay ── */
+        .modal-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(6px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.open { display: flex; animation: fadeIn .25s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .modal {
+            background: #fff;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            width: 92%;
+            max-width: 750px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 30px 60px rgba(0,0,0,.25);
+            animation: slideUp .3s ease;
+        }
+        @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .modal-close {
+            position: absolute; top: 1.25rem; right: 1.25rem;
+            background: #f1f5f9; border: none; border-radius: 50%;
+            width: 36px; height: 36px; cursor: pointer;
+            font-size: 1rem; color: #64748b; transition: background .2s;
+        }
+        .modal-close:hover { background: #fee2e2; color: #991b1b; }
+
+        /* Modal header */
+        .modal-faculty-header {
+            display: flex; align-items: center; gap: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        .modal-avatar {
+            width: 72px; height: 72px; border-radius: 1rem;
+            object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,.12);
+        }
+        .modal-faculty-header h2 { font-size: 1.4rem; font-weight: 700; }
+        .modal-faculty-header p { color: #64748b; font-size: .9rem; margin-top: .2rem; }
+
+        /* Current status */
+        .current-status-bar {
+            border-radius: 1rem; padding: 1rem 1.5rem;
+            display: flex; align-items: center; gap: 1rem;
+            margin-bottom: 1.5rem; font-weight: 600;
+        }
+        .cs-available { background: #dcfce7; color: #166534; }
+        .cs-busy      { background: #fee2e2; color: #991b1b; }
+        .cs-meeting   { background: #fef9c3; color: #854d0e; }
+        .cs-hidden    { background: #f1f5f9; color: #475569; }
+        .current-status-bar .cs-icon { font-size: 1.4rem; }
+
+        /* Location pill (faculty-view only) */
+        .location-pill {
+            background: #0f172a; color: #2dd4bf;
+            border-radius: 2rem; padding: .35rem 1rem;
+            font-size: .8rem; font-weight: 700; letter-spacing: .04em;
+            display: inline-flex; align-items: center; gap: .4rem;
+        }
+
+        /* Weekly timetable grid */
+        .weekly-title {
+            font-size: .9rem; font-weight: 700; color: #64748b;
+            text-transform: uppercase; letter-spacing: .06em;
+            margin-bottom: 1rem;
+        }
+        .tt-grid {
+            overflow-x: auto;
+        }
+        .tt-table {
+            width: 100%; border-collapse: collapse; font-size: .82rem;
+        }
+        .tt-table th {
+            background: #0f172a; color: #2dd4bf;
+            padding: .6rem .8rem; text-align: center;
+            font-weight: 700; letter-spacing: .04em;
+        }
+        .tt-table td {
+            padding: .55rem .75rem; text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+        .tt-table tr:nth-child(even) td { background: #f8fafc; }
+        .tt-cell-busy    { background: #fee2e2 !important; color: #991b1b; font-weight: 600; border-radius: .4rem; }
+        .tt-cell-meeting { background: #fef9c3 !important; color: #854d0e; font-weight: 600; border-radius: .4rem; }
+        .tt-cell-free    { color: #94a3b8; font-size: .75rem; }
+
+        /* Role badge in header */
+        .role-tag {
+            font-size: .7rem; font-weight: 700; text-transform: uppercase;
+            padding: .2rem .6rem; border-radius: 2rem; letter-spacing: .06em;
+        }
+        .role-student { background: #e0f2fe; color: #0369a1; }
+        .role-faculty { background: #ede9fe; color: #5b21b6; }
+
+        /* Substitution Badge */
+        .sub-badge {
+            background: #fffbeb; color: #b45309; border: 1px solid #fde68a;
+            font-size: .65rem; font-weight: 700; padding: .1rem .4rem;
+            border-radius: .4rem; display: inline-flex; align-items: center; gap: .2rem;
+            margin-top: .2rem;
+        }
+        /* Appointment Form */
+        .appt-form {
+            background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 1rem;
+            padding: 1.5rem; margin-top: 1.5rem; display: none;
+            animation: slideUp .3s ease;
+        }
+        .appt-form.open { display: block; }
+        .appt-form h4 { font-size: 1rem; margin-bottom: 1rem; color: #0f172a; }
+        .appt-form .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+        .appt-form input, .appt-form textarea {
+            width: 100%; padding: .6rem .8rem; border: 1px solid #cbd5e1;
+            border-radius: .6rem; font-size: .85rem; outline: none;
+        }
+        .appt-form button {
+            background: #0f172a; color: #2dd4bf; border: none;
+            padding: .7rem 1.5rem; border-radius: .6rem; font-weight: 700;
+            cursor: pointer; width: 100%; transition: opacity .2s;
+        }
+        .btn-request-slot {
+            display: block; margin-top: .4rem; background: #0f172a;
+            color: #2dd4bf; border: none; border-radius: .4rem;
+            padding: .2rem .5rem; font-size: .65rem; font-weight: 700;
+            cursor: pointer; transition: transform .1s;
+        }
+        .btn-request-slot:active { transform: scale(0.95); }
+        .home-btn {
+            display: flex; align-items: center; gap: 0.6rem;
+            color: #fff; text-decoration: none; font-weight: 700;
+            font-size: 0.85rem; padding: 0.5rem 1rem;
+            background: rgba(255,255,255,0.1); border-radius: 0.8rem;
+            transition: all 0.2s; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .home-btn:hover { background: rgba(255,255,255,0.2); border-color: var(--accent-teal); transform: translateY(-1px); }
+    </style>
+</head>
+
+<body>
+
+    <header class="main-header">
+        <div class="container header-flex">
+            <div style="display:flex;align-items:center;gap:1.5rem;">
+                <a href="../landing/index.html" class="home-btn">
+                    <i class="fas fa-home"></i>
+                    Home
+                </a>
+                <h1>OneCampus</h1>
+            </div>
+            <div style="display:flex;align-items:center;gap:1rem;">
+                <span id="roleDisplay" class="role-tag role-student">Student View</span>
+                <div class="profile-logo"><i class="fas fa-user-circle"></i></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Search -->
+    <section class="container search-section">
+        <div class="search-container">
+            <i class="fas fa-search" style="color: var(--text-muted)"></i>
+            <input type="text" id="facultySearch" placeholder="Search by name, expertise, or cabin..." oninput="filterFaculty()">
+            <select id="deptFilter" onchange="filterFaculty()">
+                <option value="all">All Departments</option>
+                <option value="CSE">Computer Science</option>
+                <option value="ECE">Electronics</option>
+                <option value="MECH">Mechanical</option>
+                <option value="DOS">Sciences</option>
+            </select>
+        </div>
+    </section>
+
+    <nav class="sticky-nav">
+        <div class="container">
+            <ul id="dept-nav"></ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div id="faculty-sections-container">
+            <div style="text-align:center;padding:100px">
+                <i class="fas fa-spinner fa-spin" style="font-size:3rem;color:var(--accent-teal)"></i>
+                <p style="margin-top:1rem;font-weight:500;">Connecting to Campus Database...</p>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 OneCampus - Faculty Availability Portal</p>
+        </div>
+    </footer>
+
+    <!-- Detail Modal -->
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModalOnBg(event)">
+        <div class="modal" id="detailModal">
+            <button class="modal-close" onclick="closeModal()"><i class="fas fa-times"></i></button>
+            <div id="modalContent">Loading...</div>
+        </div>
+    </div>
+
+    <script>
+        let allFaculty = [];
+
+        // ── Read role from the real session key ──
+        const _session = JSON.parse(localStorage.getItem('onecampus_user') || '{}');
+        const userRole = _session.role || 'student'; // 'student' | 'faculty' | 'admin' | 'tpo'
+
+        // Admin (Academic) → send to the admin grid immediately
+        if (userRole === 'admin' && _session.department === 'Academic') {
+            window.location.href = '/faculty/Admin_Grid.html';
+        }
+
+        // Update role badge
+        const roleDisplay = document.getElementById('roleDisplay');
+        if (userRole === 'faculty') {
+            roleDisplay.textContent = 'Faculty View';
+            roleDisplay.className = 'role-tag role-faculty';
+        } else {
+            roleDisplay.textContent = 'Student View';
+            roleDisplay.className = 'role-tag role-student';
+        }
+
+        async function loadFaculty() {
+            try {
+                const res = await fetch(`/api/faculty/status?role=${userRole}`);
+                const data = await res.json();
+                if (data.success) {
+                    allFaculty = data.faculty;
+                    renderFaculty(allFaculty);
+                }
+            } catch (err) {
+                document.getElementById('faculty-sections-container').innerHTML =
+                    '<p style="text-align:center;color:red;padding:4rem">Connection error. Please try again.</p>';
+            }
+        }
+
+        function filterFaculty() {
+            const term = document.getElementById('facultySearch').value.toLowerCase();
+            const dept = document.getElementById('deptFilter').value;
+            const filtered = allFaculty.filter(f => {
+                const matchSearch = (f.fullName || '').toLowerCase().includes(term) ||
+                    (f.focusAreas || '').toLowerCase().includes(term) ||
+                    (f.cabin || '').toLowerCase().includes(term);
+                const matchDept = dept === 'all' || f.department === dept;
+                return matchSearch && matchDept;
+            });
+            renderFaculty(filtered);
+        }
+
+        function getStatusInfo(av) {
+            if (!av || av.status === 'Hidden') return { cls: 'status-busy', label: 'Timetable Hidden' };
+            let label = av.status;
+            if (av.status === 'Available') label = 'Available';
+            if (av.status === 'In Meeting') label = 'In Meeting';
+            if (av.status === 'In Class') label = 'In Class';
+            
+            let subText = '';
+            if (av.substituteName) {
+                subText = `<div class="sub-badge"><i class="fas fa-exchange-alt"></i> Sub: ${av.substituteName}</div>`;
+            }
+            
+            let cls = 'status-busy';
+            if (av.status === 'Available') cls = 'status-available';
+            if (av.status === 'In Meeting') cls = 'status-meeting';
+
+            return { cls, label, subText };
+        }
+
+        function renderFaculty(faculty) {
+            const container = document.getElementById('faculty-sections-container');
+            const nav = document.getElementById('dept-nav');
+            container.innerHTML = '';
+            nav.innerHTML = '';
+
+            if (!faculty.length) {
+                container.innerHTML = '<div style="text-align:center;padding:100px"><i class="fas fa-search-minus" style="font-size:3rem;opacity:.2"></i><p>No matches found.</p></div>';
+                return;
+            }
+
+            const departments = {};
+            faculty.forEach(f => {
+                if (!departments[f.department]) departments[f.department] = [];
+                departments[f.department].push(f);
+            });
+
+            const deptMap = {
+                CSE: 'Computer Science Engineering',
+                ECE: 'Electronics and Communication',
+                MECH: 'Mechanical Engineering',
+                DOS: 'Department of Sciences'
+            };
+
+            for (const dept in departments) {
+                const li = document.createElement('li');
+                li.innerHTML = `<a href="#${dept.toLowerCase()}">${dept}</a>`;
+                nav.appendChild(li);
+
+                const section = document.createElement('section');
+                section.id = dept.toLowerCase();
+                section.className = 'faculty-section';
+
+                section.innerHTML = `
+                    <h2 class="section-title">
+                        <i class="fas fa-university" style="color:var(--accent-teal)"></i>
+                        ${deptMap[dept] || dept}
+                    </h2>
+                    <div class="faculty-grid">
+                        ${departments[dept].map(f => {
+                            const { cls, label } = getStatusInfo(f.availability);
+                            return `
+                                <div class="faculty-card" onclick="openModal('${f._id}')">
+                                    <div class="card-top">
+                                        <img class="card-image" src="https://ui-avatars.com/api/?name=${encodeURIComponent(f.fullName)}&background=random" alt="${f.fullName}">
+                                        <div class="faculty-header-info">
+                                            <h3>${f.fullName}</h3>
+                                            <p>${f.designation || ''}</p>
+                                        </div>
+                                    </div>
+                                    <ul class="info-list">
+                                        <li><i class="fas fa-envelope"></i> ${f.email}</li>
+                                        <li><i class="fas fa-door-open"></i> Cabin: ${f.cabin || 'N/A'}</li>
+                                        <li><i class="fas fa-microscope"></i> ${f.focusAreas || 'N/A'}</li>
+                                        <li style="justify-content:space-between;margin-top:1rem;">
+                                            <div style="display:flex;flex-direction:column;">
+                                                <span style="font-weight:600">Status</span>
+                                                ${f.availability.substituteName ? `<div class="sub-badge" style="margin-top:.2rem;"><i class="fas fa-exchange-alt"></i> Sub: ${f.availability.substituteName}</div>` : ''}
+                                            </div>
+                                            <span class="status-badge ${cls}">${label}</span>
+                                        </li>
+                                    </ul>
+                                </div>`;
+                        }).join('')}
+                    </div>`;
+                container.appendChild(section);
+            }
+        }
+
+        async function openModal(facultyId) {
+            const overlay = document.getElementById('modalOverlay');
+            const content = document.getElementById('modalContent');
+            overlay.classList.add('open');
+            content.innerHTML = '<div style="text-align:center;padding:3rem"><i class="fas fa-spinner fa-spin" style="font-size:2rem;color:#2dd4bf"></i></div>';
+
+            try {
+                const res = await fetch(`/api/faculty/${facultyId}/timetable?role=${userRole}`);
+                const data = await res.json();
+                if (!data.success) throw new Error('Failed');
+
+                const { faculty: f, timetable, currentStatus: cs } = data;
+
+                // Current status bar
+                let csClass = 'cs-available', csIcon = 'fa-check-circle', csText = 'Currently Available';
+                if (cs.status === 'In Class')   { csClass = 'cs-busy';   csIcon = 'fa-chalkboard-teacher'; csText = 'Currently In Class'; }
+                if (cs.status === 'In Meeting') { csClass = 'cs-meeting'; csIcon = 'fa-comments';           csText = 'Currently In Meeting'; }
+                if (cs.status === 'Hidden')     { csClass = 'cs-hidden'; csIcon = 'fa-eye-slash';           csText = 'Timetable Private'; }
+                if (cs.status === 'Unavailable'){ csClass = 'cs-busy';   csIcon = 'fa-ban';                csText = 'Personal Block'; }
+
+                // Location pill (faculty view with classroom info)
+                let locationHTML = '';
+                if (userRole !== 'student' && cs.classroom) {
+                    locationHTML = `<span class="location-pill"><i class="fas fa-map-marker-alt"></i> ${cs.classroom.roomCode} — ${cs.classroom.block}</span>`;
+                }
+
+                // Build week grid
+                const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                const periods = ['P1', 'P2', 'P3', 'P4', 'Afternoon'];
+
+                // Index timetable
+                const ttMap = {};
+                (timetable || []).forEach(s => { ttMap[`${s.day}_${s.period}`] = s; });
+
+                let gridHTML = `
+                    <p class="weekly-title"><i class="fas fa-calendar-week"></i> &nbsp;Weekly Timetable</p>
+                    <div class="tt-grid">
+                    <table class="tt-table">
+                        <thead>
+                            <tr>
+                                <th>Period</th>
+                                ${days.map(d => `<th>${d}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${periods.map(p => `
+                                <tr>
+                                    <td style="font-weight:700;color:#0f172a">${p}</td>
+                                    ${days.map(d => {
+                                        const key = `${d}_${p}`;
+                                        const slot = ttMap[key];
+                                        if (!slot) return `<td class="tt-cell-free">—</td>`;
+                                        
+                                        if (slot.type === 'meeting') {
+                                            return `<td><span class="tt-cell-meeting">${userRole !== 'student' && slot.label ? slot.label : 'Meeting'}</span></td>`;
+                                        }
+                                        
+                                        let detail = `<span style="font-weight:600;display:block">${slot.subject}</span>`;
+                                        if (slot.substituteName) {
+                                            detail += `<div style="font-size:.65rem;color:#b45309;font-weight:700;margin-top:.1rem">Sub: ${slot.substituteName}</div>`;
+                                        }
+                                        if (slot.topics) {
+                                            detail += `<i style="font-size:.65rem;color:#64748b;display:block;margin-top:.1rem">Topic: ${slot.topics}</i>`;
+                                        }
+                                        if (slot.type === 'available') {
+                                            detail += `<button class="btn-request-slot" onclick="toggleApptForm('${f._id}', '${key}')">Request 10m</button>`;
+                                        }
+                                        return `<td><span class="tt-cell-busy">${detail}</span></td>`;
+                                    }).join('')}
+                                </tr>`).join('')}
+                        </tbody>
+                    </table>
+                    </div>`;
+
+                content.innerHTML = `
+                    <div class="modal-faculty-header">
+                        <img class="modal-avatar" src="https://ui-avatars.com/api/?name=${encodeURIComponent(f.fullName)}&background=random" alt="${f.fullName}">
+                        <div>
+                            <h2>${f.fullName}</h2>
+                            <p>${f.designation || ''} &bull; ${f.department || ''}</p>
+                        </div>
+                    </div>
+                    ${cs.status !== 'Hidden' ? gridHTML : '<p style="color:#64748b;text-align:center;padding:2rem">This faculty has set their timetable to private.</p>'}
+                    <div id="apptForm" class="appt-form">
+                        <h4><i class="fas fa-calendar-plus"></i> Request Appointment</h4>
+                        <div class="form-row">
+                            <input type="text" id="apName" placeholder="Your Name" required>
+                            <input type="text" id="apRoll" placeholder="Roll Number" required>
+                        </div>
+                        <input type="text" id="apReason" placeholder="Reason for meeting (e.g. Project doubt)" style="margin-bottom:1rem">
+                        <button id="btnSubmitAppt" onclick="submitAppointmentRequest()">Confirm Request</button>
+                    </div>`;
+
+            } catch (e) {
+                content.innerHTML = '<p style="text-align:center;color:red;padding:2rem">Could not load timetable. Please try again.</p>';
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.remove('open');
+        }
+        function closeModalOnBg(e) {
+            if (e.target === document.getElementById('modalOverlay')) closeModal();
+        }
+
+        loadFaculty();
+
+        let activeApptFacultyId = null;
+        let activeApptSlotKey = null;
+
+        function toggleApptForm(fid, skey) {
+            const form = document.getElementById('apptForm');
+            if (activeApptSlotKey === skey) {
+                form.classList.remove('open');
+                activeApptSlotKey = null;
+            } else {
+                activeApptFacultyId = fid;
+                activeApptSlotKey = skey;
+                form.classList.add('open');
+                form.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        async function submitAppointmentRequest() {
+            const name = document.getElementById('apName').value.trim();
+            const roll = document.getElementById('apRoll').value.trim();
+            const reason = document.getElementById('apReason').value.trim();
+            const btn = document.getElementById('btnSubmitAppt');
+
+            if (!name || !roll) return alert('Name and Roll Number are required.');
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
+            try {
+                const res = await fetch('/api/faculty/appointments/request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        facultyId: activeApptFacultyId,
+                        slotKey: activeApptSlotKey,
+                        studentName: name,
+                        studentRoll: roll,
+                        reason
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Request sent successfully! Faculty will be notified.');
+                    document.getElementById('apptForm').classList.remove('open');
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (e) {
+                alert('Network error. Please try again.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Confirm Request';
+            }
+        }
+    </script>
+</body>
+</html>
