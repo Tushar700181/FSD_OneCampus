@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head><title>Order History</title></head>
+<body>
+    <h2>My Cafe Orders</h2>
+    <ul id="historyList"></ul>
+    <script>
+        fetch('/api/my-orders').then(r => r.json()).then(data => {
+            const list = document.getElementById('historyList');
+            data.forEach(o => {
+                list.innerHTML += `<li>Order: ${o._id} - Total: $${o.total}</li>`;
+            });
+        });
+    </script>
+</body>
+</html>
