@@ -1,0 +1,122 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
+img {
+    width: 570px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(42, 31, 20, 0.1);
+}
+
+.selectBtn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10%;
+}
+
+.start, .destination {
+    height: 0px;
+    width: 0px;
+    background-color: chartreuse;
+    z-index: 10;
+}
+
+/* Glassmorphic Labels */
+.label-badge {
+    position: absolute;
+    background: rgba(253, 248, 242, 0.85) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(200, 136, 42, 0.4);
+    padding: 6px 14px;
+    border-radius: 20px;
+    color: var(--text-dark, #2a1f14);
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(42, 31, 20, 0.15);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    z-index: 10;
+}
+
+.label-badge:hover {
+    background: var(--gold, #c8882a) !important;
+    color: #fff !important;
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 20px rgba(200, 136, 42, 0.35);
+    border-color: transparent;
+}
+
+/* Label Positioning (relative to the 570px map wrapper) */
+.svbp {
+    left: 130px;
+    top: 50px;
+}
+
+.vbg {
+    top: 310px;
+    left: 300px;
+}
+
+.vbg2 {
+    font-size: 0.7rem;
+    top: 360px;
+    left: 405px;
+}
+
+.basketball {
+    top: 340px;
+    left: 70px;
+}
+
+.multi {
+    top: 460px;
+    left: 50px;
+}
+
+.tennis {
+    top: 465px;
+    left: 280px;
+}
+
+.cpg {
+    top: 250px;
+    left: 390px;
+}
+
+.lawn {
+    top: 230px;
+    left: 90px;
+}
+
+.st {
+    top: 260px;
+    left: 260px;
+}
+
+.kc {
+    top: 210px;
+    left: 250px;
+}
+
+/* Modal Colours (Can be overridden by interior.css but kept for fallback) */
+.modal-header {
+    background-color: #343a40;
+    color: #ffffff;
+}
+
+.modal-footer {
+    background-color: #f8f9fa;
+}
+
+.modal-content {
+    background-color: #ffffff;
+    color: #333333;
+}
+
+
+/* Global blend mode for map images */
+img, .bgimg, .maps { mix-blend-mode: multiply !important; }
